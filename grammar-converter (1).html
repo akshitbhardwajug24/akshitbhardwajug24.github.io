@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CFG Normal Form Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Serif:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #f7f6f3;
+  --bg2:      #ffffff;
+  --bg3:      #f0efe9;
+  --bg4:      #e8e7e0;
+  --border:   #dddcd5;
+  --border2:  #c8c7be;
+  --text:     #1a1917;
+  --text2:    #6b6960;
+  --text3:    #a8a79e;
+  --cnf:      #2f4b8c;
+  --cnf-lt:   #eef1f9;
+  --cnf-bd:   #c5ceea;
+  --gnf:      #1d6e5a;
+  --gnf-lt:   #eaf4f0;
+  --gnf-bd:   #b8ddd4;
+  --amber:    #92600a;
+  --amber-lt: #fdf3e3;
+  --red:      #8c2020;
+  --red-lt:   #fdf0f0;
+  --green:    #1d6e3a;
+  --green-lt: #eaf4ee;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans',sans-serif;
+  font-weight:300;
+  font-size:15px;
+  line-height:1.6;
+  min-height:100vh;
+}
+
+/* ── NAV ───────────────────────────────────────────── */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(247,246,243,0.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:52px;
+}
+.nav-brand{
+  font-family:'IBM Plex Serif',serif;
+  font-style:italic;font-size:16px;font-weight:300;
+  color:var(--text);letter-spacing:0.2px;
+}
+.nav-links{display:flex;gap:28px}
+.nav-links a{
+  font-size:13px;font-weight:400;color:var(--text2);
+  text-decoration:none;letter-spacing:0.2px;transition:color 0.15s;
+}
+.nav-links a:hover{color:var(--text)}
+
+/* ── HERO ──────────────────────────────────────────── */
+.hero{
+  max-width:900px;margin:0 auto;
+  padding:64px 32px 48px;
+  border-bottom:1px solid var(--border);
+}
+.hero-tag{
+  display:inline-block;
+  font-size:10px;font-weight:500;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--cnf);background:var(--cnf-lt);border:1px solid var(--cnf-bd);
+  padding:3px 10px;border-radius:20px;margin-bottom:20px;
+}
+.hero h1{
+  font-family:'IBM Plex Serif',serif;font-weight:300;font-style:italic;
+  font-size:46px;line-height:1.08;letter-spacing:-0.5px;
+  color:var(--text);margin-bottom:16px;
+}
+.hero h1 span{font-style:normal;font-weight:300}
+.hero-sub{
+  font-size:15px;color:var(--text2);max-width:560px;line-height:1.7;
+}
+.hero-chips{display:flex;gap:8px;margin-top:24px;flex-wrap:wrap}
+.chip{
+  font-size:11px;font-weight:500;letter-spacing:0.4px;text-transform:uppercase;
+  padding:4px 12px;border-radius:20px;border:1px solid;
+}
+.chip-cnf{color:var(--cnf);background:var(--cnf-lt);border-color:var(--cnf-bd)}
+.chip-gnf{color:var(--gnf);background:var(--gnf-lt);border-color:var(--gnf-bd)}
+
+/* ── LAYOUT ────────────────────────────────────────── */
+.page{max-width:900px;margin:0 auto;padding:0 32px 80px}
+
+/* ── SECTION HEADERS ───────────────────────────────── */
+.sec-header{
+  display:flex;align-items:baseline;gap:14px;
+  padding:40px 0 20px;
+}
+.sec-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;color:var(--text3);letter-spacing:0.5px;flex-shrink:0;
+}
+.sec-title{
+  font-family:'IBM Plex Serif',serif;
+  font-weight:300;font-size:22px;color:var(--text);
+}
+.sec-line{flex:1;height:1px;background:var(--border);margin-left:12px}
+
+/* ── THEORY CARDS ──────────────────────────────────── */
+.theory-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;margin-bottom:16px;
+}
+@media(max-width:660px){.theory-grid{grid-template-columns:1fr}}
+.theory-card{
+  background:var(--bg2);padding:22px 24px;
+}
+.tc-label{
+  font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+.tc-label.cnf{color:var(--cnf)}
+.tc-label.gnf{color:var(--gnf)}
+.tc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-cnf{background:var(--cnf)}
+.dot-gnf{background:var(--gnf)}
+.tc-title{
+  font-family:'IBM Plex Serif',serif;font-weight:300;font-size:18px;
+  margin-bottom:10px;color:var(--text);
+}
+.tc-body{font-size:13px;color:var(--text2);line-height:1.7}
+.tc-rule{
+  margin-top:14px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:6px;padding:10px 14px;color:var(--text);line-height:2;
+}
+.tc-rule .hl-cnf{color:var(--cnf);font-weight:500}
+.tc-rule .hl-gnf{color:var(--gnf);font-weight:500}
+
+.steps-theory{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;
+}
+@media(max-width:660px){.steps-theory{grid-template-columns:1fr}}
+.st-col{background:var(--bg2);padding:20px 22px}
+.st-col-title{
+  font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;
+  margin-bottom:14px;
+}
+.st-col-title.cnf{color:var(--cnf)}
+.st-col-title.gnf{color:var(--gnf)}
+.st-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.st-list li{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:13px;color:var(--text2);line-height:1.5;
+}
+.st-list li .n{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;
+  padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:2px;
+}
+.n-cnf{background:var(--cnf-lt);color:var(--cnf)}
+.n-gnf{background:var(--gnf-lt);color:var(--gnf)}
+
+/* ── TOOL SECTION ──────────────────────────────────── */
+.input-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;padding:24px;margin-bottom:20px;
+}
+.ic-top{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:14px;flex-wrap:wrap;gap:10px;
+}
+.ic-label{
+  font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--text3);
+}
+.ex-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ex-note{font-size:11px;color:var(--text3);margin-right:2px}
+.ex-btn{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:4px 10px;border:1px solid var(--border2);border-radius:5px;
+  background:var(--bg3);color:var(--text2);cursor:pointer;transition:all 0.15s;
+}
+.ex-btn:hover{background:var(--bg4);color:var(--text)}
+
+textarea{
+  width:100%;min-height:130px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:7px;
+  padding:12px 14px;color:var(--text);
+  font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.8;
+  resize:vertical;outline:none;transition:border-color 0.2s;
+}
+textarea:focus{border-color:var(--cnf-bd);background:var(--bg2)}
+
+.hint{margin-top:9px;font-size:11px;color:var(--text3);line-height:1.6}
+.hint code{
+  font-family:'IBM Plex Mono',monospace;
+  background:var(--bg4);padding:1px 5px;border-radius:3px;color:var(--text2);
+}
+.btn-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.btn-go{
+  font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;
+  padding:9px 22px;border-radius:7px;border:none;
+  background:var(--text);color:var(--bg);cursor:pointer;
+  transition:opacity 0.15s,transform 0.1s;letter-spacing:0.2px;
+}
+.btn-go:hover{opacity:0.82}
+.btn-go:active{transform:scale(0.98)}
+.btn-sec{
+  font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:400;
+  padding:9px 18px;border-radius:7px;border:1px solid var(--border2);
+  background:transparent;color:var(--text2);cursor:pointer;transition:all 0.15s;
+}
+.btn-sec:hover{background:var(--bg3);color:var(--text)}
+
+/* ── OUTPUT ────────────────────────────────────────── */
+#output{margin-top:4px}
+.empty{
+  text-align:center;padding:56px 20px;
+  color:var(--text3);font-size:13px;
+  border:1px dashed var(--border2);border-radius:10px;
+}
+.empty-sym{font-family:'IBM Plex Mono',monospace;font-size:28px;margin-bottom:10px;opacity:0.35}
+
+/* ── RESULT PANELS ─────────────────────────────────── */
+.res-panels{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;margin-bottom:24px;
+}
+@media(max-width:640px){.res-panels{grid-template-columns:1fr}}
+.res-panel{background:var(--bg2);padding:20px 22px}
+.res-tag{
+  font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;
+  margin-bottom:4px;display:flex;align-items:center;gap:7px;
+}
+.res-tag.cnf{color:var(--cnf)}
+.res-tag.gnf{color:var(--gnf)}
+.res-rule-fmt{font-size:12px;color:var(--text3);margin-bottom:10px}
+.status{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:500;padding:2px 8px;
+  border-radius:20px;margin-bottom:12px;
+}
+.status.ok{background:var(--green-lt);color:var(--green)}
+.status.warn{background:var(--amber-lt);color:var(--amber)}
+
+/* ── GRAMMAR DISPLAY ───────────────────────────────── */
+.grammar{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:2}
+.rule{display:flex;align-items:baseline;gap:8px}
+.lhs{color:var(--cnf);font-weight:500;min-width:32px;text-align:right}
+.arr{color:var(--text3)}
+.rhs{color:var(--text)}
+
+/* ── STEPS ─────────────────────────────────────────── */
+.steps-label{
+  font-family:'IBM Plex Serif',serif;font-weight:300;font-size:18px;
+  color:var(--text);margin-bottom:4px;
+}
+.steps-sub{font-size:12px;color:var(--text3);margin-bottom:14px}
+.steps-list{display:flex;flex-direction:column;gap:6px}
+.step{
+  border:1px solid var(--border);border-radius:8px;
+  background:var(--bg2);overflow:hidden;transition:border-color 0.2s;
+}
+.step:hover{border-color:var(--border2)}
+.step.open{border-color:var(--border2)}
+.step-hdr{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 16px;cursor:pointer;user-select:none;transition:background 0.15s;
+}
+.step-hdr:hover{background:var(--bg3)}
+.snum{
+  width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;
+  flex-shrink:0;
+}
+.snum.cnf{background:var(--cnf-lt);color:var(--cnf);border:1px solid var(--cnf-bd)}
+.snum.gnf{background:var(--gnf-lt);color:var(--gnf);border:1px solid var(--gnf-bd)}
+.smeta{flex:1}
+.stitle{font-size:13px;font-weight:400;color:var(--text)}
+.sphase{font-size:11px;color:var(--text3);margin-top:1px}
+.stag{
+  font-size:10px;font-weight:500;letter-spacing:0.7px;text-transform:uppercase;
+  padding:2px 8px;border-radius:10px;flex-shrink:0;
+}
+.stag.cnf{background:var(--cnf-lt);color:var(--cnf)}
+.stag.gnf{background:var(--gnf-lt);color:var(--gnf)}
+.chev{color:var(--text3);font-size:11px;transition:transform 0.2s;flex-shrink:0}
+.step.open .chev{transform:rotate(180deg)}
+.step-body{
+  padding:18px 18px 18px 50px;
+  border-top:1px solid var(--border);display:none;
+  animation:fadeUp 0.15s ease;
+}
+.step.open .step-body{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.sdesc{
+  font-size:13px;color:var(--text2);line-height:1.7;
+  margin-bottom:14px;padding:11px 14px;
+  background:var(--bg3);border-radius:7px;
+  border-left:2px solid var(--border2);
+}
+.sdesc.cnf{border-left-color:var(--cnf)}
+.sdesc.gnf{border-left-color:var(--gnf)}
+.glabel{font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.gbox{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:7px;padding:12px 16px;
+}
+
+/* ── ERROR ─────────────────────────────────────────── */
+.err{
+  background:var(--red-lt);border:1px solid #f0c0c0;
+  border-radius:8px;padding:14px 18px;
+  font-size:13px;color:var(--red);line-height:1.6;
+}
+
+/* ── FOOTER ────────────────────────────────────────── */
+footer{
+  border-top:1px solid var(--border);
+  padding:28px 32px;margin-top:60px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:12px;
+}
+.ft-left{font-size:12px;color:var(--text3)}
+.ft-right{display:flex;gap:6px}
+.ft-chip{
+  font-size:10px;font-weight:500;letter-spacing:0.6px;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;border:1px solid;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-brand">CFG Converter</span>
+  <div class="nav-links">
+    <a href="#theory">Theory</a>
+    <a href="#tool">Converter</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">Formal Language Theory</div>
+  <h1><span>Context-Free Grammar</span><br>Normal Form Converter</h1>
+  <p class="hero-sub">Transform any context-free grammar into Chomsky Normal Form and Greibach Normal Form with step-by-step intermediate grammars — built for students of theoretical computer science.</p>
+  <div class="hero-chips">
+    <span class="chip chip-cnf">Chomsky Normal Form</span>
+    <span class="chip chip-gnf">Greibach Normal Form</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── THEORY SECTION ── -->
+  <section id="theory">
+    <div class="sec-header">
+      <span class="sec-num">01</span>
+      <span class="sec-title">Theoretical Background</span>
+      <span class="sec-line"></span>
+    </div>
+
+    <div class="theory-grid">
+      <div class="theory-card">
+        <div class="tc-label cnf"><span class="tc-dot dot-cnf"></span>Chomsky Normal Form</div>
+        <div class="tc-title">CNF</div>
+        <div class="tc-body">
+          A context-free grammar is in CNF if every production rule takes one of exactly two forms: a non-terminal producing exactly two non-terminals, or a non-terminal producing exactly one terminal symbol. This form is fundamental to the CYK parsing algorithm, which runs in O(n³) time.
+        </div>
+        <div class="tc-rule">
+          A → <span class="hl-cnf">B C</span> &nbsp;&nbsp;<span style="color:var(--text3)">// two non-terminals</span><br>
+          A → <span class="hl-cnf">a</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3)">// one terminal</span><br>
+          S → ε &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3)">// only if S is start</span>
+        </div>
+      </div>
+      <div class="theory-card">
+        <div class="tc-label gnf"><span class="tc-dot dot-gnf"></span>Greibach Normal Form</div>
+        <div class="tc-title">GNF</div>
+        <div class="tc-body">
+          A grammar is in GNF if every production starts with exactly one terminal symbol followed by zero or more non-terminals. GNF is useful because it directly corresponds to top-down parsing: each derivation step consumes exactly one input terminal, enabling construction of LL(1) parsers.
+        </div>
+        <div class="tc-rule">
+          A → <span class="hl-gnf">a</span> B C &nbsp;<span style="color:var(--text3)">// terminal then NTs</span><br>
+          A → <span class="hl-gnf">a</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3)">// terminal alone</span><br>
+          A → <span class="hl-gnf">b</span> B &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3)">// terminal + one NT</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps-theory">
+      <div class="st-col">
+        <div class="st-col-title cnf">CNF — 5 Transformation Steps</div>
+        <ul class="st-list">
+          <li><span class="n n-cnf">1</span>Add a new start symbol S₀ → S if the start symbol appears in any right-hand side.</li>
+          <li><span class="n n-cnf">2</span>Compute nullable non-terminals and eliminate all ε-productions by expanding combinations.</li>
+          <li><span class="n n-cnf">3</span>Remove unit productions A → B by computing the unit closure and inlining their rules.</li>
+          <li><span class="n n-cnf">4</span>For terminals in long productions, introduce Tₐ → a and substitute the terminal.</li>
+          <li><span class="n n-cnf">5</span>Binarize productions of length ≥ 3 into chains of binary rules using new non-terminals.</li>
+        </ul>
+      </div>
+      <div class="st-col">
+        <div class="st-col-title gnf">GNF — 2 Additional Steps</div>
+        <ul class="st-list">
+          <li><span class="n n-gnf">6</span>Eliminate all left recursion (direct and indirect) using the A/A′ method with a fixed non-terminal ordering.</li>
+          <li><span class="n n-gnf">7</span>Work from the highest-indexed non-terminal downward, substituting leading non-terminals until every production begins with a terminal.</li>
+        </ul>
+        <div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:7px;font-size:12px;color:var(--text2);line-height:1.6;border:1px solid var(--border)">
+          <strong style="color:var(--text);font-weight:500">Why these two forms?</strong><br>
+          CNF is used in CYK parsing and proof of the pumping lemma. GNF simplifies construction of pushdown automata — each rule pops exactly one symbol per derivation step.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CONVERTER SECTION ── -->
+  <section id="tool">
+    <div class="sec-header">
+      <span class="sec-num">02</span>
+      <span class="sec-title">Grammar Converter</span>
+      <span class="sec-line"></span>
+    </div>
+
+    <div class="input-card">
+      <div class="ic-top">
+        <span class="ic-label">Input Grammar</span>
+        <div class="ex-row">
+          <span class="ex-note">Examples:</span>
+          <button class="ex-btn" onclick="loadEx(0)">Simple AB</button>
+          <button class="ex-btn" onclick="loadEx(1)">With ε</button>
+          <button class="ex-btn" onclick="loadEx(2)">Long prods</button>
+          <button class="ex-btn" onclick="loadEx(3)">Left recursion</button>
+        </div>
+      </div>
+
+      <textarea id="gram" placeholder="S -> AB | a&#10;A -> aA | a&#10;B -> bB | b"></textarea>
+
+      <div class="hint">
+        One production per line · Uppercase = non-terminals · Lowercase = terminals ·
+        Use <code>|</code> for alternatives · Use <code>ε</code> for empty string ·
+        Start symbol = LHS of first rule · <code>Ctrl+Enter</code> to convert
+      </div>
+      <div class="btn-row">
+        <button class="btn-go" onclick="convert()">Convert Grammar</button>
+        <button class="btn-sec" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+
+    <div id="output">
+      <div class="empty">
+        <div class="empty-sym">G → ?</div>
+        Enter a grammar above and click Convert to see CNF &amp; GNF with all intermediate steps.
+      </div>
+    </div>
+  </section>
+
+</div><!-- /page -->
+
+<footer>
+  <span class="ft-left">CFG Normal Form Converter · Theoretical Computer Science Education Tool</span>
+  <div class="ft-right">
+    <span class="ft-chip" style="color:var(--cnf);background:var(--cnf-lt);border-color:var(--cnf-bd)">CNF</span>
+    <span class="ft-chip" style="color:var(--gnf);background:var(--gnf-lt);border-color:var(--gnf-bd)">GNF</span>
+  </div>
+</footer>
+
+<script>
+/* ── EXAMPLES ─────────────────────────────────────── */
+const EX = [
+  "S -> AB | a\nA -> aA | a\nB -> bB | b",
+  "S -> ASB | ε\nA -> aAS | a\nB -> SbS | A | bb",
+  "S -> aAbBc\nA -> aA | ε\nB -> bBa | b",
+  "S -> Sa | b"
+];
+function loadEx(i){ document.getElementById('gram').value = EX[i]; }
+
+/* ── GRAMMAR HELPERS ──────────────────────────────── */
+function parseGrammar(text){
+  const rules={}, order=[];
+  for(let line of text.trim().split('\n')){
+    line=line.trim(); if(!line) continue;
+    const m=line.match(/^([A-Z][A-Z0-9']*)\s*->\s*(.+)$/);
+    if(!m) throw new Error(`Invalid rule: "${line}"`);
+    const lhs=m[1];
+    const prods=m[2].split('|').map(p=>p.trim()).filter(Boolean);
+    if(!rules[lhs]){rules[lhs]=[];order.push(lhs);}
+    for(const p of prods)
+      rules[lhs].push((p==='ε'||p==='epsilon')?[]:p.replace(/\s/g,'').split(''));
+  }
+  if(!order.length) throw new Error('No rules found');
+  return {rules, start:order[0], order};
+}
+function clone(g){
+  const r={};
+  for(const k in g.rules) r[k]=g.rules[k].map(p=>[...p]);
+  return {rules:r, start:g.start, order:[...g.order]};
+}
+function isTerm(s){return s && !/^[A-Z]/.test(s)}
+function isNT(s){return s && /^[A-Z]/.test(s)}
+function freshNT(used,base){
+  let i=0,n; do{n=base+(i?i:'');i++;}while(used.has(n)); return n;
+}
+
+/* ── RENDER GRAMMAR ───────────────────────────────── */
+function renderGrammar(g){
+  let h='<div class="grammar">';
+  for(const lhs of g.order){
+    if(!g.rules[lhs]) continue;
+    g.rules[lhs].forEach((p,i)=>{
+      const rhs = p.length===0?'ε':p.join('');
+      h+=`<div class="rule">
+        <span class="lhs">${i===0?lhs:''}</span>
+        <span class="arr">${i===0?'→':'|'}</span>
+        <span class="rhs">${rhs}</span>
+      </div>`;
+    });
+  }
+  return h+'</div>';
+}
+
+/* ── CNF STEPS ────────────────────────────────────── */
+function s1_newStart(g){
+  const ng=clone(g); let found=false;
+  for(const lhs in ng.rules) for(const p of ng.rules[lhs]) if(p.includes(ng.start)){found=true;break;}
+  if(found){
+    const ns='S0'; ng.order.unshift(ns); ng.rules[ns]=[[ng.start]]; ng.start=ns;
+  }
+  return {g:ng, desc: found
+    ? `The start symbol <strong>${g.start}</strong> appeared in a right-hand side. New start symbol <strong>S₀ → ${g.start}</strong> introduced to prevent ambiguity in the final form.`
+    : `The start symbol does not appear in any right-hand side — no new symbol is needed.`};
+}
+
+function s2_elimEpsilon(g){
+  const ng=clone(g);
+  const nullable=new Set(); let ch=true;
+  while(ch){ch=false; for(const lhs in ng.rules) for(const p of ng.rules[lhs])
+    if((p.length===0||p.every(s=>nullable.has(s)))&&!nullable.has(lhs)){nullable.add(lhs);ch=true;}}
+  for(const lhs in ng.rules){
+    const seen=new Set(ng.rules[lhs].map(p=>JSON.stringify(p)));
+    for(const p of [...ng.rules[lhs]]){
+      if(!p.length) continue;
+      const nIdx=p.map((s,i)=>nullable.has(s)?i:-1).filter(i=>i>=0);
+      for(let mask=1;mask<(1<<nIdx.length);mask++){
+        const np=p.filter((_,i)=>!nIdx.some((ni,j)=>ni===i&&(mask>>j&1)));
+        if(np.length>0){const k=JSON.stringify(np); if(!seen.has(k)){seen.add(k);ng.rules[lhs].push(np);}}
+      }
+    }
+    ng.rules[lhs]=ng.rules[lhs].filter((p,i,arr)=>
+      (p.length>0||lhs===ng.start)&&arr.findIndex(q=>JSON.stringify(q)===JSON.stringify(p))===i);
+  }
+  return {g:ng, desc:`Nullable non-terminals: <strong>{${[...nullable].join(', ')||'∅'}}</strong>. For each nullable symbol in a production, a new version of the rule is added with that symbol omitted. All ε-productions are then removed (except S → ε if S is the start symbol).`};
+}
+
+function s3_elimUnit(g){
+  const ng=clone(g); const uc={};
+  for(const lhs in ng.rules){
+    const reach=new Set([lhs]); let ch=true;
+    while(ch){ch=false; for(const s of reach) for(const p of(ng.rules[s]||[]))
+      if(p.length===1&&isNT(p[0])&&!reach.has(p[0])){reach.add(p[0]);ch=true;}}
+    uc[lhs]=reach;
+  }
+  for(const lhs in ng.rules){
+    const np=[];
+    for(const nt of uc[lhs]) for(const p of(ng.rules[nt]||[]))
+      if(!(p.length===1&&isNT(p[0])))
+        if(!np.some(q=>JSON.stringify(q)===JSON.stringify(p))) np.push([...p]);
+    ng.rules[lhs]=np;
+  }
+  return {g:ng, desc:`Unit productions (A → B where B is a lone non-terminal) are removed. The <em>unit closure</em> of each NT is computed — all NTs reachable by chains of unit steps — and their non-unit productions are inlined directly.`};
+}
+
+function s4_termVars(g){
+  const ng=clone(g); const used=new Set(ng.order); const tm={};
+  for(const lhs in ng.rules){
+    ng.rules[lhs]=ng.rules[lhs].map(p=>{
+      if(p.length<=1) return p;
+      return p.map(sym=>{
+        if(isTerm(sym)){
+          if(!tm[sym]){const nt=freshNT(used,'T'+sym.toUpperCase());tm[sym]=nt;used.add(nt);}
+          return tm[sym];
+        }
+        return sym;
+      });
+    });
+  }
+  for(const [t,nt] of Object.entries(tm)){ng.order.push(nt);ng.rules[nt]=[[t]];}
+  const added=Object.entries(tm).map(([t,nt])=>`${nt} → ${t}`).join(', ');
+  return {g:ng, desc:`Each terminal appearing inside a production of length ≥ 2 is replaced by a dedicated non-terminal.${added?` Introduced: <strong>${added}</strong>.`:' No new rules needed.'}`};
+}
+
+function s5_binarize(g){
+  const ng=clone(g); const used=new Set(ng.order); let cnt=0;
+  for(const lhs of [...ng.order]){
+    const np=[];
+    for(const p of ng.rules[lhs]){
+      if(p.length<=2){np.push(p);continue;}
+      let cur=[...p],curL=lhs; const chain=[];
+      while(cur.length>2){
+        const nt=freshNT(used,'X');used.add(nt);ng.order.push(nt);ng.rules[nt]=[];cnt++;
+        chain.push({lhs:curL,prod:[cur[0],nt]});curL=nt;cur=cur.slice(1);
+      }
+      chain.push({lhs:curL,prod:cur});
+      for(const it of chain) if(it.lhs===lhs) np.push(it.prod); else ng.rules[it.lhs].push(it.prod);
+    }
+    ng.rules[lhs]=np;
+  }
+  return {g:ng, desc:`Productions of length ≥ 3 are decomposed into chains of binary rules using ${cnt} new non-terminal${cnt!==1?'s':''} (X, X1, …). Every rule now has at most 2 symbols on the right-hand side — <strong>CNF is complete</strong>.`};
+}
+
+function checkCNF(g){
+  for(const lhs in g.rules) for(const p of g.rules[lhs]){
+    if(p.length===0&&lhs!==g.start) return false;
+    if(p.length===1&&!isTerm(p[0])) return false;
+    if(p.length>2) return false;
+    if(p.length===2&&(isTerm(p[0])||isTerm(p[1]))) return false;
+  }
+  return true;
+}
+
+/* ── GNF STEPS ────────────────────────────────────── */
+function s6_elimLeftRec(g){
+  const ng=clone(g); const order=ng.order;
+  for(let i=0;i<order.length;i++){
+    const Ai=order[i];
+    for(let j=0;j<i;j++){
+      const Aj=order[j]; const np=[];
+      for(const p of ng.rules[Ai])
+        if(p[0]===Aj) for(const q of(ng.rules[Aj]||[])) np.push([...q,...p.slice(1)]);
+        else np.push([...p]);
+      ng.rules[Ai]=np;
+    }
+    const rec=ng.rules[Ai].filter(p=>p[0]===Ai);
+    const non=ng.rules[Ai].filter(p=>p[0]!==Ai);
+    if(rec.length>0){
+      const used=new Set(ng.order);
+      const Ai2=freshNT(used,Ai+"'");
+      ng.order.splice(i+1,0,Ai2);
+      ng.rules[Ai2]=[...rec.map(p=>[...p.slice(1),Ai2]),[]];
+      ng.rules[Ai]=non.length>0?non.map(p=>[...p,Ai2]):[[Ai2]];
+      i++;
+    }
+  }
+  return {g:ng, desc:`Left recursion is eliminated using a fixed ordering A₁…Aₙ. For direct recursion <strong>A → Aα | β</strong>, we introduce A′ so that <strong>A → βA′</strong> and <strong>A′ → αA′ | ε</strong>. Indirect recursion is resolved first by substituting lower-indexed productions.`};
+}
+
+function s7_substituteGNF(g){
+  const ng=clone(g); const order=[...ng.order];
+  for(let i=order.length-1;i>=0;i--){
+    const A=order[i]; const np=[];
+    for(const p of ng.rules[A]){
+      if(!p.length||isTerm(p[0])){np.push(p);continue;}
+      const lead=p[0];
+      if(ng.rules[lead]) for(const q of ng.rules[lead]){
+        const r=[...q,...p.slice(1)];
+        if(!np.some(x=>JSON.stringify(x)===JSON.stringify(r))) np.push(r);
+      } else np.push(p);
+    }
+    ng.rules[A]=np;
+  }
+  return {g:ng, desc:`Working from the highest-indexed NT downward, each production whose first symbol is a non-terminal is expanded by substituting that NT's productions. After this pass every production starts with a terminal — <strong>GNF is complete</strong>.`};
+}
+
+function checkGNF(g){
+  for(const lhs in g.rules) for(const p of g.rules[lhs]){
+    if(!p.length) continue;
+    if(!isTerm(p[0])) return false;
+    if(p.slice(1).some(s=>isTerm(s))) return false;
+  }
+  return true;
+}
+
+/* ── BUILD STEP HTML ──────────────────────────────── */
+function buildStep(num,title,phase,tag,desc,gramHtml,open){
+  const tc=tag.toLowerCase();
+  return `<div class="step${open?' open':''}">
+    <div class="step-hdr" onclick="this.parentElement.classList.toggle('open')">
+      <span class="snum ${tc}">${num}</span>
+      <div class="smeta">
+        <div class="stitle">${title}</div>
+        <div class="sphase">${phase}</div>
+      </div>
+      <span class="stag ${tc}">${tag}</span>
+      <span class="chev">▼</span>
+    </div>
+    <div class="step-body">
+      <div class="sdesc ${tc}">${desc}</div>
+      <div class="glabel">Grammar after this step</div>
+      <div class="gbox">${gramHtml}</div>
+    </div>
+  </div>`;
+}
+
+/* ── MAIN CONVERT ─────────────────────────────────── */
+function convert(){
+  const text=document.getElementById('gram').value.trim();
+  const out=document.getElementById('output');
+  if(!text){out.innerHTML='<div class="err">Please enter a grammar first.</div>';return;}
+  try{
+    let g=parseGrammar(text); const steps=[];
+
+    const r0=s1_newStart(g);
+    steps.push({title:'Add new start symbol',phase:'Step 1 of 5 — CNF preparation',tag:'CNF',...r0}); g=r0.g;
+
+    const r1=s2_elimEpsilon(g);
+    steps.push({title:'Eliminate ε-productions',phase:'Step 2 of 5 — Remove epsilon rules',tag:'CNF',...r1}); g=r1.g;
+
+    const r2=s3_elimUnit(g);
+    steps.push({title:'Eliminate unit productions',phase:'Step 3 of 5 — Remove A → B rules',tag:'CNF',...r2}); g=r2.g;
+
+    const r3=s4_termVars(g);
+    steps.push({title:'Introduce terminal non-terminals',phase:'Step 4 of 5 — Isolate terminals',tag:'CNF',...r3}); g=r3.g;
+
+    const r4=s5_binarize(g);
+    steps.push({title:'Binarize long productions',phase:'Step 5 of 5 — Binary rules only',tag:'CNF',...r4}); g=r4.g;
+
+    const cnfG=clone(g); const cnfOK=checkCNF(g);
+
+    const r5=s6_elimLeftRec(g);
+    steps.push({title:'Eliminate left recursion',phase:'Step 6 of 7 — GNF preparation',tag:'GNF',...r5}); g=r5.g;
+
+    const r6=s7_substituteGNF(g);
+    steps.push({title:'Substitute terminal-leading rules',phase:'Step 7 of 7 — GNF completion',tag:'GNF',...r6}); g=r6.g;
+
+    const gnfG=clone(g); const gnfOK=checkGNF(g);
+
+    let html='';
+
+    /* result panels */
+    html+=`<div class="res-panels">
+      <div class="res-panel">
+        <div class="res-tag cnf"><span class="tc-dot dot-cnf"></span>Chomsky Normal Form</div>
+        <div class="res-rule-fmt">A → BC &nbsp;|&nbsp; A → a</div>
+        <div class="status ${cnfOK?'ok':'warn'}">${cnfOK?'✓ Verified':'⚠ Approximate'}</div>
+        ${renderGrammar(cnfG)}
+      </div>
+      <div class="res-panel">
+        <div class="res-tag gnf"><span class="tc-dot dot-gnf"></span>Greibach Normal Form</div>
+        <div class="res-rule-fmt">A → a B₁B₂…Bₙ</div>
+        <div class="status ${gnfOK?'ok':'warn'}">${gnfOK?'✓ Verified':'⚠ Approximate'}</div>
+        ${renderGrammar(gnfG)}
+      </div>
+    </div>`;
+
+    /* steps */
+    html+=`<div class="steps-label">Transformation Steps</div>
+           <div class="steps-sub">Click any step to expand and inspect the intermediate grammar.</div>
+           <div class="steps-list">`;
+    steps.forEach((s,i)=>{ html+=buildStep(i+1,s.title,s.phase,s.tag,s.desc,renderGrammar(s.g),i===0); });
+    html+='</div>';
+
+    out.innerHTML=html;
+  }catch(e){
+    out.innerHTML=`<div class="err"><strong>Parse Error:</strong> ${e.message}</div>`;
+  }
+}
+
+function clearAll(){
+  document.getElementById('gram').value='';
+  document.getElementById('output').innerHTML=`<div class="empty"><div class="empty-sym">G → ?</div>Enter a grammar above and click Convert.</div>`;
+}
+
+document.getElementById('gram').addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.key==='Enter') convert();
+});
+</script>
+</body>
+</html>
